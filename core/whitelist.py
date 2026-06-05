@@ -92,10 +92,27 @@ def _should_alert(key, cooldown):
         return False
 
 
+_local_prefix = None
+
+def _get_local_prefix():
+    """Retorna el prefijo /24 de la IP local (con caché)."""
+    global _local_prefix
+    if _local_prefix:
+        return _local_prefix
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(1)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        _local_prefix = ".".join(ip.split(".")[:3]) + "."
+    except Exception:
+        _local_prefix = "192.168."
+    logger.info("Subred monitorizada: %s0/24", _local_prefix)
+    return _local_prefix
+
+
 def _is_local_network(ip):
-    prefixes = (
-        "192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.",
-        "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.",
-        "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.",
-    )
-    return any(ip.startswith(p) for p in prefixes)
+    """Solo alerta dispositivos en la misma subred /24 donde corre el IDS."""
+    return ip.startswith(_get_local_prefix())
