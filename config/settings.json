@@ -1,0 +1,9 @@
+{
+  "admin_email": "",
+  "smtp_server": "smtp.gmail.com",
+  "smtp_port": 587,
+  "network_interface": null,
+  "alert_cooldown_seconds": 60,
+  "admin_password_hash": "1ae92b0d1d4829dc25b77b4cba3f96234cdd867191696d3bc8facb20da58df5e",
+  "admin_salt": "ids_salt_2024"
+}

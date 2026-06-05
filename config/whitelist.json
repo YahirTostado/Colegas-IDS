@@ -1,0 +1,7 @@
+{
+  "description": "Equipos autorizados en la red — agregar via escaner de red o manualmente",
+  "authorized_ips": [],
+  "authorized_macs": [],
+  "last_updated": "",
+  "updated_by": ""
+}
