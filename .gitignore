@@ -6,3 +6,7 @@ data/logs/
 *.db
 app 2.py
 config/settings 2.json
+dist/
+build/
+*.spec
+.DS_Store
