@@ -192,4 +192,49 @@ def get_stats():
     for key in ["whitelist_alerts", "site_visits", "threat_alerts", "forensic_reports"]:
         row = conn.execute(f"SELECT COUNT(*) as n FROM {key}").fetchone()
         stats[key] = row["n"]
+    # Escaneos de puertos (subconjunto de threat_alerts)
+    row = conn.execute(
+        "SELECT COUNT(*) as n FROM threat_alerts WHERE threat_type='PORT_SCAN'"
+    ).fetchone()
+    stats["port_scans"] = row["n"]
     return stats
+
+
+def fetch_monthly_stats(months=8):
+    """
+    Retorna estadísticas mensuales de alertas para la gráfica dual.
+    Resultado: lista de dicts con keys: label, whitelist, threats.
+    """
+    conn = _get_conn()
+    cur = conn.execute("""
+        SELECT month,
+               SUM(wl) AS whitelist,
+               SUM(th) AS threats
+        FROM (
+            SELECT strftime('%Y-%m', timestamp) AS month, 1 AS wl, 0 AS th
+            FROM whitelist_alerts
+            UNION ALL
+            SELECT strftime('%Y-%m', timestamp) AS month, 0 AS wl, 1 AS th
+            FROM threat_alerts
+        )
+        GROUP BY month
+        ORDER BY month ASC
+    """)
+    rows = [dict(r) for r in cur.fetchall()]
+    # Tomar los últimos N meses
+    rows = rows[-months:] if len(rows) > months else rows
+    # Formatear etiqueta del mes: "2025-06" → "Jun"
+    import calendar
+    result = []
+    for r in rows:
+        try:
+            y, m = r["month"].split("-")
+            label = calendar.month_abbr[int(m)]
+        except Exception:
+            label = r["month"]
+        result.append({
+            "label":     label,
+            "whitelist": r["whitelist"],
+            "threats":   r["threats"],
+        })
+    return result

@@ -10,6 +10,7 @@ from datetime import datetime
 from core.whitelist import WhitelistChecker
 from core.monitor import SiteMonitor
 from core.threat_intel import ThreatIntelligence
+from core.portscan import PortScanDetector
 
 logger = logging.getLogger("ids.sniffer")
 
@@ -41,9 +42,10 @@ class PacketSniffer:
         self._thread   = None
         self.last_error = None
 
-        self.whitelist = WhitelistChecker()
-        self.monitor   = SiteMonitor()
-        self.threat    = ThreatIntelligence()
+        self.whitelist  = WhitelistChecker()
+        self.monitor    = SiteMonitor()
+        self.threat     = ThreatIntelligence()
+        self.port_scan  = PortScanDetector()
 
     @property
     def is_running(self):
@@ -113,6 +115,12 @@ class PacketSniffer:
 
             # Módulo 3 — Inteligencia de Amenazas
             self.threat.check(src_ip, dst_ip, ts)
+
+            # Módulo Plus — Detección de escaneo de puertos
+            if TCP in packet:
+                self.port_scan.check(src_ip, packet[TCP].dport, ts)
+            elif UDP in packet and packet[UDP].dport != 53:
+                self.port_scan.check(src_ip, packet[UDP].dport, ts)
 
             # Módulo 2 — DNS (UDP puerto 53, solo queries, no respuestas)
             if UDP in packet and packet[UDP].dport == 53 and DNS in packet:
