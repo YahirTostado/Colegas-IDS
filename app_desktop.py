@@ -1,6 +1,6 @@
 """
 IDS Corporativo — Aplicación de Escritorio
-PyQt6 — Diseño monospace / dashboard analítico.
+PyQt6 
 """
 import sys, os, json, subprocess, logging
 from datetime import datetime, timedelta
@@ -42,7 +42,7 @@ from core.scanner import get_local_ip, detect_interface, get_default_network, sc
 SETTINGS_PATH = os.path.join(ROOT, "config", "settings.json")
 
 # ════════════════════════════════════════════════════════════════════════
-# PALETA — diseño monospace / sketch con acentos vívidos
+# PALETA — 
 # ════════════════════════════════════════════════════════════════════════
 FONT        = "Courier New"
 TEXT        = "#111111"      # casi negro — máximo contraste
