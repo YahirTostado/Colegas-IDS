@@ -1,10 +1,10 @@
 {
-  "admin_email": "",
+  "admin_email": "ytostado43@gmail.com",
   "smtp_server": "smtp.gmail.com",
   "smtp_port": 587,
   "network_interface": null,
   "alert_cooldown_seconds": 60,
-  "admin_user": "",
-  "admin_password_hash": "",
-  "admin_salt": ""
+  "admin_user": "admin",
+  "admin_password_hash": "8ddb094a45195ba35ec6b3c6fe5d7c53f8b307de84956a9dba1be3c3d34cf492",
+  "admin_salt": "b784e1b9dc6abfcb6ae4469d886fb624"
 }

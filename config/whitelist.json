@@ -1,7 +1,13 @@
 {
-  "description": "Equipos autorizados en la red — agregar via escaner de red o manualmente",
-  "authorized_ips": [],
-  "authorized_macs": [],
-  "last_updated": "",
-  "updated_by": ""
+  "description": "Equipos autorizados en la red corporativa",
+  "authorized_ips": [
+    "192.168.100.2",
+    "192.168.100.1"
+  ],
+  "authorized_macs": [
+    "10:91:a8:a6:21:70",
+    "d4:00:68:a5:f8:68"
+  ],
+  "last_updated": "2026-06-09",
+  "updated_by": "admin"
 }

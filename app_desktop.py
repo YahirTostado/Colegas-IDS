@@ -103,12 +103,13 @@ QWidget#Sidebar {{
 QPushButton#NavBtn {{
     background: transparent;
     border: none;
-    font-size: 19px;
+    font-size: 12px;
     color: {SIDEBAR_TXT};
-    min-width: 52px; max-width: 52px;
-    min-height: 52px; max-height: 52px;
+    min-width: 138px; max-width: 138px;
+    min-height: 36px; max-height: 36px;
     margin: 1px 4px;
-    padding: 0;
+    padding: 4px 10px;
+    text-align: left;
 }}
 QPushButton#NavBtn:hover {{
     background: {SIDEBAR_HOVER};
@@ -1681,12 +1682,12 @@ class SettingsPage(QWidget):
 class IDSApp(QMainWindow):
     # Mapa: (símbolo Unicode, tooltip)
     _NAV = [
-        ("⊞", "Dashboard"),
-        ("✓", "Módulo 1: Lista Blanca"),
-        ("◉", "Módulo 2: Sitios"),
-        ("△", "Módulo 3: Amenazas"),
-        ("◈", "Módulo 4: Forense"),
-        ("⚙", "Configuración"),
+        "Dashboard",
+        "Lista Blanca",
+        "Sitios",
+        "Amenazas",
+        "Forense",
+        "Configuración",
     ]
 
     def __init__(self):
@@ -1708,22 +1709,24 @@ class IDSApp(QMainWindow):
         m.addWidget(self._build_content(), stretch=1)
 
     def _build_sidebar(self):
-        sb = QWidget(); sb.setObjectName("Sidebar"); sb.setFixedWidth(62)
+        sb = QWidget(); sb.setObjectName("Sidebar"); sb.setFixedWidth(154)
         l = QVBoxLayout(sb); l.setContentsMargins(0, 16, 0, 16); l.setSpacing(2)
         l.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # Logo
-        logo = QLabel("◈")
-        logo.setStyleSheet(f"font-size:22px; color:{C_BLUE}; background:transparent; padding: 8px 0 14px 0;")
-        logo.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        # Título
+        logo = QLabel("IDS Corporativo")
+        logo.setStyleSheet(
+            f"font-size:11px; font-weight:700; color:{C_BLUE}; "
+            f"background:transparent; padding: 6px 10px 12px 10px; letter-spacing:.04em;"
+        )
+        logo.setAlignment(Qt.AlignmentFlag.AlignLeft)
         l.addWidget(logo)
         l.addWidget(self._sep())
 
         # Botones de navegación
-        for sym, tip in self._NAV:
-            btn = QPushButton(sym)
+        for name in self._NAV:
+            btn = QPushButton(name)
             btn.setObjectName("NavBtn")
-            btn.setToolTip(tip)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setProperty("active", False)
             btn.clicked.connect(lambda _, i=len(self._nav_btns): self._navigate(i))
@@ -1734,12 +1737,12 @@ class IDSApp(QMainWindow):
         l.addStretch()
 
         # Motor IDS (mini-controles)
-        self.start_btn = _restyle(QPushButton("▶"), "green")
+        self.start_btn = _restyle(QPushButton("Iniciar"), "green")
         self.start_btn.setToolTip("Iniciar captura")
-        self.start_btn.setFixedSize(50, 34); self.start_btn.clicked.connect(self._start)
-        self.stop_btn = _restyle(QPushButton("■"), "stop")
+        self.start_btn.setFixedSize(138, 34); self.start_btn.clicked.connect(self._start)
+        self.stop_btn = _restyle(QPushButton("Detener"), "stop")
         self.stop_btn.setToolTip("Detener captura")
-        self.stop_btn.setFixedSize(50, 34); self.stop_btn.setEnabled(False)
+        self.stop_btn.setFixedSize(138, 34); self.stop_btn.setEnabled(False)
         self.stop_btn.clicked.connect(self._stop)
         l.addWidget(self.start_btn, alignment=Qt.AlignmentFlag.AlignHCenter)
         l.addWidget(self.stop_btn,  alignment=Qt.AlignmentFlag.AlignHCenter)
@@ -1797,7 +1800,7 @@ class IDSApp(QMainWindow):
             dlg = BFPDialog(self)
             if dlg.exec() != QDialog.DialogCode.Accepted or not check_bpf():
                 QMessageBox.warning(self, "Sin permisos",
-                    "Ejecuta en Terminal:\n  sudo chmod o+rw /dev/bpf*\nLuego presiona ▶")
+                    "Ejecuta en Terminal:\n  sudo chmod o+rw /dev/bpf*\nLuego presiona Iniciar")
                 return
         cfg = load_settings()
         get_sniffer(interface=cfg.get("network_interface") or None).start()
@@ -1838,7 +1841,7 @@ class IDSApp(QMainWindow):
 
     def _startup_check(self):
         if sys.platform == "darwin" and not check_bpf():
-            self.bpf_lbl.setText("Sin BPF — pulsa ▶"); self.bpf_lbl.show()
+            self.bpf_lbl.setText("Sin BPF — pulsa Iniciar"); self.bpf_lbl.show()
         elif sys.platform != "darwin" and os.geteuid() != 0:
             self.bpf_lbl.setText("Usar sudo para captura real"); self.bpf_lbl.show()
 
