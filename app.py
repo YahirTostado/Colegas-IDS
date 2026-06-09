@@ -325,6 +325,56 @@ def save_settings(data):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
+# ────────────────────────────────────────────────────────────────────────────
+# Credenciales SMTP: se manejan SOLO en .env, nunca en settings.json.
+# (Mismo comportamiento que app_desktop.py — evita contraseñas en texto plano
+#  dentro de archivos versionables.)
+# ────────────────────────────────────────────────────────────────────────────
+ENV_PATH = os.path.join(ROOT, ".env")
+
+
+def load_env_credentials():
+    """Lee IDS_SMTP_USER / IDS_SMTP_PASSWORD desde el archivo .env."""
+    creds = {"smtp_user": "", "smtp_password": ""}
+    if not os.path.exists(ENV_PATH):
+        return creds
+    with open(ENV_PATH, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            if key.strip() == "IDS_SMTP_USER":
+                creds["smtp_user"] = val.strip()
+            elif key.strip() == "IDS_SMTP_PASSWORD":
+                creds["smtp_password"] = val.strip()
+    return creds
+
+
+def save_env_credentials(user, pwd):
+    """Escribe las credenciales en .env preservando el resto del archivo."""
+    lines = []
+    if os.path.exists(ENV_PATH):
+        with open(ENV_PATH, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    written = set()
+    out = []
+    for line in lines:
+        s = line.strip()
+        if s.startswith("IDS_SMTP_USER="):
+            out.append(f"IDS_SMTP_USER={user}\n"); written.add("U")
+        elif s.startswith("IDS_SMTP_PASSWORD="):
+            out.append(f"IDS_SMTP_PASSWORD={pwd}\n"); written.add("P")
+        else:
+            out.append(line)
+    if "U" not in written:
+        out.append(f"IDS_SMTP_USER={user}\n")
+    if "P" not in written:
+        out.append(f"IDS_SMTP_PASSWORD={pwd}\n")
+    with open(ENV_PATH, "w", encoding="utf-8") as f:
+        f.writelines(out)
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # Helpers de UI
 # ════════════════════════════════════════════════════════════════════════════
@@ -1239,25 +1289,31 @@ def page_settings():
             "Para Gmail: activa Verificación en 2 pasos → genera una "
             "[App Password](https://myaccount.google.com/apppasswords) y úsala aquí."
         )
+        creds = load_env_credentials()
         col1, col2 = st.columns(2)
         with col1:
             smtp_server = st.text_input("Servidor SMTP", value=cfg.get("smtp_server", "smtp.gmail.com"))
-            smtp_user   = st.text_input("Usuario SMTP (tu email)", value=cfg.get("smtp_user", ""))
+            smtp_user   = st.text_input("Usuario SMTP (tu email)", value=creds["smtp_user"])
         with col2:
             smtp_port = st.number_input("Puerto", value=int(cfg.get("smtp_port", 587)), step=1)
             smtp_pass = st.text_input("App Password / Contraseña SMTP",
-                                      value=cfg.get("smtp_password", ""), type="password")
+                                      value=creds["smtp_password"], type="password")
+        st.caption(
+            "🔒 El usuario y la App Password SMTP se almacenan en el archivo .env, "
+            "nunca en settings.json (que sí se versiona)."
+        )
 
         if st.button("Guardar configuración de notificaciones", type="primary"):
             cfg.update({
-                "admin_email":   admin_email,
-                "smtp_server":   smtp_server,
-                "smtp_port":     smtp_port,
-                "smtp_user":     smtp_user,
-                "smtp_password": smtp_pass,
+                "admin_email": admin_email,
+                "smtp_server": smtp_server,
+                "smtp_port":   smtp_port,
             })
+            cfg.pop("smtp_user", None)        # higiene: limpia credenciales heredadas
+            cfg.pop("smtp_password", None)
             save_settings(cfg)
-            st.success("Configuración guardada.")
+            save_env_credentials(smtp_user, smtp_pass)
+            st.success("Configuración guardada — credenciales escritas en .env.")
 
         st.divider()
         if st.button("Enviar correo de prueba"):
