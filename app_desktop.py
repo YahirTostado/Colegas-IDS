@@ -35,7 +35,10 @@ logging.basicConfig(
 )
 
 from utils import database as db
-from utils.auth import verify_password, change_password
+from utils.auth import (
+    verify_credentials, verify_password, change_password, set_credentials,
+    ensure_admin_bootstrapped, is_configured,
+)
 from core.sniffer import get_sniffer, reset_sniffer
 from core.scanner import get_local_ip, detect_interface, get_default_network, scan_network
 
@@ -1497,6 +1500,14 @@ class SettingsPage(QWidget):
         s.setStyleSheet(f"font-size:11px; color:{MUTED}; background:transparent; border:none;")
         s.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        self.user = QLineEdit()
+        self.user.setPlaceholderText("Usuario de administrador")
+        self.user.setStyleSheet(
+            f"background:{WHITE}; color:{TEXT}; border:2px solid {BORDER_LT}; "
+            f"border-radius:8px; padding:10px 14px; font-size:12px;"
+        )
+        self.user.returnPressed.connect(self._login)
+
         self.pwd = QLineEdit()
         self.pwd.setEchoMode(QLineEdit.EchoMode.Password)
         self.pwd.setPlaceholderText("Contraseña de administrador")
@@ -1516,13 +1527,7 @@ class SettingsPage(QWidget):
         lb.setCursor(Qt.CursorShape.PointingHandCursor)
         lb.clicked.connect(self._login)
 
-        hint = QLabel("Contraseña por defecto: admin123")
-        hint.setStyleSheet(
-            f"font-size:10px; color:{MUTED}; background:transparent; border:none;"
-        )
-        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        for x in (icon, t, s, self.pwd, lb, hint):
+        for x in (icon, t, s, self.user, self.pwd, lb):
             cl.addWidget(x)
 
         l.addWidget(card, alignment=Qt.AlignmentFlag.AlignHCenter)
@@ -1571,13 +1576,18 @@ class SettingsPage(QWidget):
 
         # Seguridad
         ts = QWidget(); fs = QFormLayout(ts); fs.setContentsMargins(16,16,16,16); fs.setSpacing(10)
+        self.s_nu = QLineEdit()
         self.s_op = QLineEdit(); self.s_op.setEchoMode(QLineEdit.EchoMode.Password)
         self.s_np = QLineEdit(); self.s_np.setEchoMode(QLineEdit.EchoMode.Password)
         self.s_cp = QLineEdit(); self.s_cp.setEchoMode(QLineEdit.EchoMode.Password)
+        fs.addRow("Usuario:", self.s_nu)
         fs.addRow("Contraseña actual:", self.s_op)
         fs.addRow("Nueva contraseña:", self.s_np)
-        fs.addRow("Confirmar:", self.s_cp)
-        cb = _restyle(QPushButton("Cambiar contraseña")); cb.clicked.connect(self._change_pwd)
+        fs.addRow("Confirmar nueva:", self.s_cp)
+        note = QLabel("Deja la nueva contraseña en blanco si solo quieres cambiar el usuario.")
+        note.setObjectName("InfoKey"); note.setWordWrap(True)
+        fs.addRow(note)
+        cb = _restyle(QPushButton("Actualizar credenciales")); cb.clicked.connect(self._change_pwd)
         fs.addRow(cb); fs.addRow(hline())
         clr = QPushButton("Eliminar todos los registros de la base de datos")
         _restyle(clr, "danger"); clr.clicked.connect(self._clear_db); fs.addRow(clr)
@@ -1586,15 +1596,17 @@ class SettingsPage(QWidget):
         root.addWidget(tabs); return w
 
     def _login(self):
-        if verify_password(self.pwd.text()):
-            self._auth = True; self._load_values(); self._stack.setCurrentIndex(1); self.pwd.clear()
+        if verify_credentials(self.user.text(), self.pwd.text()):
+            self._auth = True; self._load_values(); self._stack.setCurrentIndex(1)
+            self.user.clear(); self.pwd.clear()
         else:
-            QMessageBox.warning(self, "Error", "Contraseña incorrecta.")
+            QMessageBox.warning(self, "Error", "Usuario o contraseña incorrectos.")
 
     def _logout(self): self._auth = False; self._stack.setCurrentIndex(0)
 
     def _load_values(self):
         cfg = load_settings(); creds = load_env_credentials()
+        self.s_nu.setText(cfg.get("admin_user",""))
         self.s_email.setText(cfg.get("admin_email",""))
         self.s_server.setText(cfg.get("smtp_server","smtp.gmail.com"))
         self.s_port.setText(str(cfg.get("smtp_port",587)))
@@ -1625,15 +1637,27 @@ class SettingsPage(QWidget):
         QMessageBox.information(self, "Motor reiniciado", "Inicia el sniffer desde el panel lateral.")
 
     def _change_pwd(self):
+        # La contraseña actual autoriza cualquier cambio de credenciales.
         if not verify_password(self.s_op.text()):
             QMessageBox.warning(self, "Error", "Contraseña actual incorrecta."); return
-        if self.s_np.text() != self.s_cp.text():
-            QMessageBox.warning(self, "Error", "Las contraseñas no coinciden."); return
-        if len(self.s_np.text()) < 6:
-            QMessageBox.warning(self, "Error", "Mínimo 6 caracteres."); return
-        change_password(self.s_np.text())
+
+        new_user = self.s_nu.text().strip()
+        if not new_user:
+            QMessageBox.warning(self, "Error", "El usuario no puede quedar vacío."); return
+
+        np, cp = self.s_np.text(), self.s_cp.text()
+        if np or cp:                       # quiere cambiar también la contraseña
+            if np != cp:
+                QMessageBox.warning(self, "Error", "Las contraseñas no coinciden."); return
+            if len(np) < 8:
+                QMessageBox.warning(self, "Error", "La contraseña debe tener mínimo 8 caracteres."); return
+            password = np
+        else:                              # solo cambia el usuario; conserva la contraseña actual
+            password = self.s_op.text()
+
+        set_credentials(new_user, password)   # rehashea con sal aleatoria nueva
         self.s_op.clear(); self.s_np.clear(); self.s_cp.clear()
-        QMessageBox.information(self, "Listo", "Contraseña actualizada.")
+        QMessageBox.information(self, "Listo", "Credenciales actualizadas.")
 
     def _clear_db(self):
         r = QMessageBox.question(self, "Confirmar",
@@ -1828,6 +1852,19 @@ def main():
     app.setApplicationName("IDS Corporativo")
     app.setStyleSheet(QSS)
     app.setFont(QFont(FONT, 12))
+
+    # Primer arranque: crea el admin a partir de IDS_ADMIN_USER / IDS_ADMIN_PASSWORD
+    # del .env. No hay credenciales por defecto en el código.
+    if not ensure_admin_bootstrapped():
+        from PyQt6.QtWidgets import QMessageBox
+        QMessageBox.warning(
+            None, "Configuración requerida",
+            "No hay un administrador configurado.\n\n"
+            "Define IDS_ADMIN_USER e IDS_ADMIN_PASSWORD en el archivo .env "
+            "(usuario válido y contraseña segura) y vuelve a iniciar la aplicación.\n\n"
+            "Consulta el Manual de Usuario para el detalle."
+        )
+
     window = IDSApp()
     window.show()
     sys.exit(app.exec())
