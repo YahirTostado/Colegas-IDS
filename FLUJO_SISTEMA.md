@@ -1,4 +1,4 @@
-# IDS Corporativo — Documentación del Sistema
+# Colega's IDS — Documentación del Sistema
 
 **Sistema de Detección de Intrusos en Python**  
 UAA · Ingeniería en Sistemas Computacionales · 8vo Semestre · Seguridad e Integridad de Datos
@@ -27,7 +27,7 @@ UAA · Ingeniería en Sistemas Computacionales · 8vo Semestre · Seguridad e In
 
 ## 1. Descripción general
 
-El IDS Corporativo es una aplicación de seguridad de red que captura y analiza el tráfico en tiempo real para detectar:
+El Colega's IDS es una aplicación de seguridad de red que captura y analiza el tráfico en tiempo real para detectar:
 
 - Dispositivos **no autorizados** que se conectan a la red (intrusión por IP o MAC desconocida)
 - Los **sitios web** que visitan los usuarios (HTTP, HTTPS y DNS)
@@ -601,4 +601,4 @@ El sistema extrae el SNI del `TLS ClientHello` solo cuando el tráfico HTTPS pas
 
 ---
 
-*Documentación generada para el proyecto IDS Corporativo — UAA ISC 2026*
+*Documentación generada para el proyecto Colega's IDS — UAA ISC 2026*

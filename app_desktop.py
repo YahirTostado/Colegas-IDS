@@ -1,5 +1,5 @@
 """
-IDS Corporativo — Aplicación de Escritorio
+Colega's IDS — Aplicación de Escritorio
 PyQt6 
 """
 import sys, os, json, subprocess, logging
@@ -1693,7 +1693,7 @@ class IDSApp(QMainWindow):
     def __init__(self):
         super().__init__()
         db.init_db()
-        self.setWindowTitle("IDS Corporativo")
+        self.setWindowTitle("Colega's IDS")
         self.resize(1200, 760); self.setMinimumSize(980, 640)
         self._pages: list = []
         self._nav_btns: list = []
@@ -1714,7 +1714,7 @@ class IDSApp(QMainWindow):
         l.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # Título
-        logo = QLabel("IDS Corporativo")
+        logo = QLabel("Colega's IDS")
         logo.setStyleSheet(
             f"font-size:11px; font-weight:700; color:{C_BLUE}; "
             f"background:transparent; padding: 6px 10px 12px 10px; letter-spacing:.04em;"
@@ -1852,7 +1852,7 @@ class IDSApp(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
-    app.setApplicationName("IDS Corporativo")
+    app.setApplicationName("Colega's IDS")
     app.setStyleSheet(QSS)
     app.setFont(QFont(FONT, 12))
 

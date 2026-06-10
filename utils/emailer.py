@@ -130,7 +130,7 @@ def _send(subject: str, html_body: str) -> bool:
 
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"]    = f"IDS Corporativo <{smtp_user}>"
+        msg["From"]    = f"Colega's IDS <{smtp_user}>"
         msg["To"]      = admin_email
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
